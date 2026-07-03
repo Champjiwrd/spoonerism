@@ -25,7 +25,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - uses: actions/upload-pages-artifact@v3
+      # UPGRADED: Changed from @v3 to @v5 to support the new Node runner architecture
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
 
@@ -35,9 +36,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    # Silences the internal Node 24 / punycode deprecation log noise
-    env:
-      NODE_OPTIONS: --no-deprecation
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        # UPGRADED: Changed from @v4 to @v5 to run natively on Node 24
+        uses: actions/deploy-pages@v5
