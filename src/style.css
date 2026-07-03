@@ -1,0 +1,37 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-display: 'Chonburi', serif;
+  --font-body: 'Mali', sans-serif;
+
+  --color-paper: #fdf8ef;
+  --color-ink: #312c51;
+}
+
+html {
+  font-family: var(--font-body);
+}
+
+body {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  /* ลายจุดหมึกจางๆ ให้ฟีลสมุดโน้ต */
+  background-image: radial-gradient(rgba(99, 102, 241, 0.14) 1.5px, transparent 1.5px);
+  background-size: 26px 26px;
+}
+
+/* การ์ดโผล่ขึ้นทีละใบตอนโหลด/เปลี่ยนฟิลเตอร์ */
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.card-pop {
+  animation: pop-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
