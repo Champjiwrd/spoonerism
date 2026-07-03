@@ -72,6 +72,36 @@ const filteredList = computed(() => {
   })
 })
 
+/* ============================================================
+ * 🔤 จัดกลุ่มตามตัวอักษร ก-ฮ
+ * คำที่ขึ้นต้นด้วยสระหน้า (เ แ โ ใ ไ) จะจัดตามพยัญชนะต้นแบบพจนานุกรม
+ * เช่น "เห็ด..." อยู่หมวด ห, "ไข้..." อยู่หมวด ข
+ * ============================================================ */
+const collator = new Intl.Collator('th')
+
+const firstConsonant = (phrase) => {
+  for (const ch of phrase) {
+    if (ch >= 'ก' && ch <= 'ฮ') return ch
+  }
+  return phrase[0] ?? ''
+}
+
+// แปลง filteredList เป็น [{ letter: 'ข', items: [...] }, ...] เรียง ก-ฮ
+const groupedList = computed(() => {
+  const groups = new Map()
+  for (const item of filteredList.value) {
+    const letter = firstConsonant(item.phrase)
+    if (!groups.has(letter)) groups.set(letter, [])
+    groups.get(letter).push(item)
+  }
+  return [...groups.entries()]
+    .sort(([a], [b]) => collator.compare(a, b))
+    .map(([letter, items]) => ({
+      letter,
+      items: [...items].sort((a, b) => collator.compare(a.phrase, b.phrase)),
+    }))
+})
+
 const clearSearch = () => {
   searchQuery.value = ''
 }
@@ -136,39 +166,48 @@ const clearSearch = () => {
       </button>
     </nav>
 
-    <!-- ═══════════ รายการคำผวน ═══════════ -->
-    <TransitionGroup
-      v-if="filteredList.length > 0"
-      tag="ul"
-      name="list"
-      class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
-    >
-      <li
-        v-for="(item, index) in filteredList"
-        :key="item.id"
-        class="card-pop group relative rounded-2xl border-2 border-indigo-200 bg-white p-5 shadow-[5px_5px_0_rgba(99,102,241,0.15)] transition-all duration-200 hover:-translate-y-1 hover:-rotate-1 hover:border-indigo-400 hover:shadow-[7px_7px_0_rgba(99,102,241,0.3)]"
-        :style="{ animationDelay: `${Math.min(index * 45, 400)}ms` }"
+    <!-- ═══════════ รายการคำผวน (เรียง ก-ฮ) ═══════════ -->
+    <div v-if="filteredList.length > 0" class="mx-auto max-w-2xl space-y-10">
+      <section
+        v-for="(group, groupIndex) in groupedList"
+        :key="group.letter"
+        class="card-pop"
+        :style="{ animationDelay: `${Math.min(groupIndex * 80, 400)}ms` }"
       >
-        <span
-          class="absolute -top-3 -left-2 rounded-full bg-amber-300 px-2.5 py-0.5 font-body text-xs font-bold text-amber-900 shadow-sm"
-        >
-          #{{ item.id }}
-        </span>
-        <p class="mt-2 font-body text-xl font-semibold leading-relaxed text-ink sm:text-2xl">
-          {{ item.phrase }}
-        </p>
-        <div class="mt-4 flex flex-wrap gap-1.5">
+        <!-- หัวหมวดตัวอักษร -->
+        <div class="mb-4 flex items-center gap-3">
           <span
-            v-for="tag in item.tags"
-            :key="tag"
-            class="rounded-full px-2.5 py-0.5 font-body text-xs font-bold ring-1"
-            :class="tagStyle(tag).badge"
+            class="flex h-12 w-12 shrink-0 -rotate-3 items-center justify-center rounded-2xl bg-indigo-600 pb-1 font-display text-2xl text-white shadow-[3px_3px_0_rgba(251,191,36,0.7)]"
           >
-            {{ tagStyle(tag).emoji }} {{ tag }}
+            {{ group.letter }}
           </span>
+          <span class="h-0.5 flex-1 rounded-full bg-indigo-200"></span>
+          <span class="font-body text-sm font-bold text-ink/40">{{ group.items.length }} คำ</span>
         </div>
-      </li>
-    </TransitionGroup>
+        <!-- รายการคำในหมวด -->
+        <ul class="space-y-3">
+          <li
+            v-for="item in group.items"
+            :key="item.id"
+            class="group flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-2xl border-2 border-indigo-200 bg-white px-5 py-3.5 shadow-[4px_4px_0_rgba(99,102,241,0.15)] transition-all duration-200 hover:-translate-y-0.5 hover:border-indigo-400 hover:shadow-[6px_6px_0_rgba(99,102,241,0.3)]"
+          >
+            <p class="font-body text-lg font-semibold leading-relaxed text-ink sm:text-xl">
+              {{ item.phrase }}
+            </p>
+            <div class="flex flex-wrap gap-1.5">
+              <span
+                v-for="tag in item.tags"
+                :key="tag"
+                class="rounded-full px-2.5 py-0.5 font-body text-xs font-bold ring-1"
+                :class="tagStyle(tag).badge"
+              >
+                {{ tagStyle(tag).emoji }} {{ tag }}
+              </span>
+            </div>
+          </li>
+        </ul>
+      </section>
+    </div>
 
     <!-- ═══════════ กรณีไม่พบผลลัพธ์ ═══════════ -->
     <div
